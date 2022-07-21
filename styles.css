@@ -1,0 +1,73 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans&family=Duru+Sans&display=swap");
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background-color: #fff;
+  font-family: "DM Sans", sans-serif;
+  font-family: "Duru Sans", sans-serif;
+  color: #ecf4fc;
+}
+ul,
+li {
+  list-style-type: none;
+}
+
+/*utility classes*/
+.container {
+  max-width: 1128px;
+  padding: 3rem 0;
+  margin: 0 auto 0 auto;
+}
+.box {
+  padding: 1rem 0;
+  height: 30%;
+  width: 40%;
+  margin: 0 auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background-color: #1363df;
+  opacity: 0.8;
+
+  text-align: center;
+}
+.enter {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem 1rem;
+  display: block;
+  border: none;
+  margin: 0 auto 0 auto;
+  color: black;
+  font-weight: 800;
+  outline: none;
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+    rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
+}
+.calc {
+  border: none;
+  border-radius: 0.5rem 0.2rem;
+  margin: 1rem;
+  padding: 0.5rem 1rem;
+  width: 30%;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+}
+.label {
+  display: block;
+  margin: 1rem 12rem 0.5rem 0;
+}
+
+.search-body {
+  display: flex;
+  margin-right: 2.5rem;
+  align-items: center;
+}
+.meter {
+  display: block;
+  margin: 0 auto 0 auto;
+  font-size: 1.5rem;
+}
