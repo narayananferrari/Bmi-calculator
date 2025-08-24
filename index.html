@@ -1,19 +1,890 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css" type="text/css">
-    <title>Document</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PG Stay — Resident (Meals + Rent + Payments)</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#0b1220; --card:#0e1528; --muted:#94a3b8; --text:#e5e7eb;
+    --accent:#22c55e; --accent-2:#38bdf8; --warn:#f59e0b; --border:#1e293b; --chip:#1f2937;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(90% 70% at 50% -10%,#1a2238 0%,#0b1022 45%,#050814 100%);color:var(--text)}
+  .app{max-width:1100px;margin:0 auto;padding:24px;padding-bottom:88px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#062a1e;background:linear-gradient(135deg,var(--accent),#16a34a);box-shadow:0 10px 22px rgba(34,197,94,.35)}
+  .brand h1{margin:0;font-size:18px}
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+  
+  /* Vacate feature */
+  .vacate-icon{
+    width:42px;height:42px;border-radius:12px;
+    background:#0b1328;border:1px solid #0e1a35;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--muted);
+    transition:all .15s ease;
+  }
+  .vacate-icon:hover{background:#0e1a35;color:var(--text)}
+  
+  /* Pie chart countdown */
+  .countdown-pie{
+    position:relative;width:42px;height:42px;
+    border-radius:50%;background:conic-gradient(from 0deg, #ef4444 0deg, #ef4444 var(--progress, 0deg), #0b1328 var(--progress, 0deg));
+    border:2px solid #1e293b;
+    display:flex;align-items:center;justify-content:center;
+    animation:pulse 2s infinite;
+  }
+  .countdown-pie .days{
+    color:#fff;font-size:11px;font-weight:700;
+    text-align:center;line-height:1;
+  }
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}
+    50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}
+  }
+  
+  /* Modal styles */
+  .modal{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,.8);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+    z-index:1000;
+  }
+  .modal-content{
+    background:linear-gradient(180deg,#0f172a,#0b1326);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:24px;max-width:400px;margin:20px;
+    text-align:center;
+  }
+  .modal h3{margin:0 0 12px;color:#ef4444}
+  .modal p{margin:0 0 20px;color:var(--muted);line-height:1.5}
+  .modal-actions{display:flex;gap:12px;justify-content:center}
+  .btn-secondary{
+    background:#374151;border:none;border-radius:10px;
+    color:#e5e7eb;font-weight:600;padding:10px 20px;
+    cursor:pointer;
+  }
+  .btn-danger{
+    background:#ef4444;border:none;border-radius:10px;
+    color:#fff;font-weight:600;padding:10px 20px;
+    cursor:pointer;
+  }
+  .hidden{display:none}
+
+  .section{background:linear-gradient(180deg,#0f172a,#0c1224);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+  .section h2{margin:0 0 6px;font-size:16px}
+  .section p{margin:0;color:var(--muted);font-size:13px}
+
+  /* Rent carousel */
+  .rent-carousel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+  .rent-card{
+    min-width:320px;max-width:360px;flex:0 0 auto;scroll-snap-align:center;
+    background:linear-gradient(180deg,#0e1528,#0b1324);border:1px solid var(--border);
+    border-radius:14px;padding:14px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.02);
+  }
+  .rent-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .rent-amt{font-size:24px;font-weight:800;letter-spacing:.2px}
+  .due{display:inline-flex;gap:6px;align-items:center;background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3);padding:4px 10px;border-radius:999px;font-size:12px}
+  .rent-meta{margin-top:8px;color:#cbd5e1;font-size:13px}
+  .rent-cta{margin-top:10px}
+  .btn{
+    background:linear-gradient(135deg,var(--accent),#16a34a);border:none;border-radius:10px;
+    color:#062a1e;font-weight:700;letter-spacing:.2px;padding:10px 14px;cursor:pointer;box-shadow:0 8px 18px rgba(34,197,94,.35)
+  }
+/* Headcounts card */
+.headcounts{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  background:linear-gradient(180deg,#0f172a,#0b1326);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px;margin-bottom:14px;
+}
+@media (max-width:800px){.headcounts{grid-template-columns:1fr 1fr}}
+.hc{background:#0b1328;border:1px solid #0e1a35;border-radius:12px;padding:12px}
+.hc small{color:var(--muted)}
+.hc .num{
+  margin-top:6px;font-size:20px;font-weight:700;
+  background:linear-gradient(90deg,#e5e7eb,#93c5fd 50%,#86efac);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+  
+  /* Meals (reusing earlier components condensed) */
+  .carousel-wrap{position:relative;background:linear-gradient(180deg,#0d1426,#0a1020);border:1px solid var(--border);border-radius:var(--radius);padding:0;overflow:hidden}
+  .carousel{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;scroll-behavior:smooth;padding:14px 0}
+  .card{width:100%;flex:0 0 auto;background:linear-gradient(180deg,#0e1528,#0b1324);border:1px solid var(--border);border-radius:14px;padding:16px;scroll-snap-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.02);margin:0 14px}
+  .card h3{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;font-size:15px;letter-spacing:.2px;line-height:1.4}
+  .badge{background:rgba(34,197,94,.15);color:#6ee7b7;border:1px solid rgba(34,197,94,.25);padding:2px 8px;border-radius:999px;font-size:11px}
+  .meal{display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#0b1328;border:1px solid #0e1a35;margin-top:8px}
+  .meal small{font-size:12px;line-height:1.4;word-wrap:break-word}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;min-height:28px}
+  .chip{background:var(--chip);border:1px solid #263042;color:#cbd5e1;font-size:11px;padding:4px 8px;border-radius:999px;line-height:1.2}
+  .attend{margin-top:12px;padding:12px;border-radius:12px;background:#0a1226;border:1px solid #14203a}
+  .toggle-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .toggle{position:relative;display:inline-flex;align-items:center;gap:8px;border:1px solid #23314a;background:#0b1220;color:#cbd5e1;padding:8px 12px;border-radius:999px;font-size:12px;cursor:pointer;line-height:1.2}
+  .toggle input{display:none}
+  .toggle .dot{width:12px;height:12px;border-radius:999px;background:#213049;border:1px solid #2b3d5a}
+  .toggle input:checked + .dot{background:linear-gradient(135deg,var(--accent),#16a34a);border-color:#14532d;box-shadow:0 0 0 2px rgba(34,197,94,.2)}
+  .toggle.disabled{opacity:0.5;pointer-events:none;color:#64748b}
+  .toggle.disabled .dot{background:#374151;border-color:#4b5563}
+  .cta{margin-top:10px;display:none}
+  .cta .btn{width:100%}
+
+  /* Dates strip (green active) */
+  .dates{margin-top:10px;display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-behavior:smooth}
+  .date-pill{flex:0 0 auto;padding:8px 12px;border-radius:999px;background:#0b1220;border:1px solid var(--border);color:#cbd5e1;font-size:13px;cursor:pointer;transition:transform .12s ease}
+  .date-pill:hover{transform:translateY(-1px)}
+  .date-pill--active{background:linear-gradient(135deg, rgba(34,197,94,.2), rgba(34,197,94,.12));border-color:#16a34a;color:#86efac;box-shadow:0 0 0 1px rgba(34,197,94,.25) inset}
+
+  /* Bottom navigation */
+  .bottom-nav{
+    position:fixed;left:0;right:0;bottom:0;backdrop-filter:saturate(120%) blur(8px);
+    background:rgba(8,12,24,.8);border-top:1px solid var(--border);
+  }
+  .tabs{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;padding:10px}
+  .tab-btn{flex:1;text-align:center;color:#cbd5e1;font-size:12px;padding:8px;border-radius:10px;border:1px solid transparent;cursor:pointer}
+  .tab-btn--active{color:#86efac;border-color:#14532d;background:rgba(20,83,45,.15)}
+  .hidden{display:none}
+  .bottom-nav{
+  position:fixed;left:0;right:0;bottom:0;
+  backdrop-filter:saturate(120%) blur(8px);
+  background:rgba(8,12,24,.85);
+  border-top:1px solid var(--border);
+}
+.tabs{
+  max-width:1100px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-around;
+  padding:10px 12px;
+}
+.tab-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  color:#9aa6b2; /* inactive */
+  padding:10px;border-radius:12px;border:1px solid transparent;
+  cursor:pointer;transition:color .15s, background .15s, border-color .15s, transform .12s;
+}
+.tab-btn:hover{transform:translateY(-1px)}
+.tab-btn--active{
+  color:#86efac; /* active icon */
+  border-color:#14532d;
+  background:linear-gradient(135deg, rgba(34,197,94,.18), rgba(34,197,94,.10));
+  box-shadow:0 0 0 1px rgba(34,197,94,.2) inset;
+}
+  
+
+  /* Rent details page */
+  .rent-details .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:720px){.rent-details .row{grid-template-columns:1fr}}
+  .kv{background:#0b1328;border:1px solid #0e1a35;border-radius:12px;padding:12px}
+  .kv small{color:var(--muted)}
+  .kv .v{margin-top:6px;font-weight:700}
+  .pay-box{margin-top:12px;background:linear-gradient(180deg,#0f172a,#0b1326);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .pay-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .input{background:#0b1220;border:1px solid var(--border);border-radius:10px;color:#e5e7eb;padding:10px 12px;min-width:220px}
+  .inline{display:inline-flex;align-items:center;gap:8px}
+  .success{color:#86efac;margin-top:8px}
+  .warn{color:#fbbf24}
+
+  /* Profile Menu List */
+  .menu-list{margin-top:16px}
+  .menu-item{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 0;border-bottom:1px solid var(--border);
+    cursor:pointer;transition:background .15s ease;
+  }
+  .menu-item:hover{background:rgba(255,255,255,.02)}
+  .menu-item:last-child{border-bottom:none}
+  .menu-icon{
+    flex:0 0 auto;color:var(--muted);
+    width:40px;height:40px;
+    background:#0b1328;border:1px solid #0e1a35;
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+  }
+  .menu-content{flex:1;min-width:0}
+  .menu-title{font-size:15px;font-weight:500;color:var(--text)}
+  .menu-subtitle{font-size:13px;color:var(--muted);margin-top:2px}
+  .menu-arrow{flex:0 0 auto;color:var(--muted)}
+</style>
 </head>
-
 <body>
-    <div id="container" class="container">
-        <!--app will be inserted using javascript-->
-    </div>
-    <script src="index.js"></script>
-</body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">PG</div>
+        <div>
+          <h1>PG Stay — Resident</h1>
+          <p>Meals, Rent & Payments in one place</p>
+        </div>
+      </div>
+      <div id="vacateContainer">
+        <div id="vacateIcon" class="vacate-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.5"/>
+            <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </header>
+    
 
+    <!-- R e n t   C a r o u s e l -->
+    <section class="section">
+      <h2>Rent</h2>
+      <p>Tap a card to view details or pay rent.</p>
+      <div id="rentCarousel" class="rent-carousel"></div>
+    </section>
+    <!-- Headcounts (restored) -->
+<section id="headcounts" class="headcounts" aria-label="Today headcounts">
+  <div class="hc">
+    <small>Total tenants</small>
+    <div id="hc-total" class="num">0</div>
+  </div>
+  <div class="hc">
+    <small>Breakfast selected today</small>
+    <div id="hc-b" class="num">0</div>
+  </div>
+  <div class="hc">
+    <small>Lunch selected today</small>
+    <div id="hc-l" class="num">0</div>
+  </div>
+  <div class="hc">
+    <small>Dinner selected today</small>
+    <div id="hc-d" class="num">0</div>
+  </div>
+</section>
+    
+
+    <!-- M e a l s -->
+    <section id="homeSection" class="section">
+      <h2>Meals</h2>
+      <p>Swipe the month’s meals or tap a date below.</p>
+      <div class="carousel-wrap">
+        <div id="carousel" class="carousel" aria-label="Meal cards carousel"></div>
+        <div id="dates" class="dates" aria-label="Dates strip"></div>
+      </div>
+    </section>
+
+    <!-- R e n t   D e t a i l s   T a b -->
+    <section id="rentSection" class="section hidden">
+      <h2>Rent details</h2>
+      <div class="rent-details">
+        <div class="row">
+          <div class="kv"><small>Property</small><div id="kv-property" class="v">Srivari Gents PG</div></div>
+          <div class="kv"><small>Room</small><div id="kv-room" class="v">K17 • 1</div></div>
+          <div class="kv"><small>Rent</small><div id="kv-rent" class="v">₹5,000/month</div></div>
+          <div class="kv"><small>Rent cycle</small><div id="kv-cycle" class="v">01</div></div>
+          <div class="kv"><small>Security deposit</small><div id="kv-deposit" class="v">₹1,000</div></div>
+          <div class="kv"><small>Agreement start date</small><div id="kv-start" class="v">Jul 09, 2025</div></div>
+          <div class="kv"><small>Agreement duration</small><div id="kv-duration" class="v">11 Months</div></div>
+          <div class="kv"><small>Lock-in period</small><div id="kv-lockin" class="v">1 Month</div></div>
+          <div class="kv"><small>Sharing type</small><div id="kv-sharing" class="v">SINGLE</div></div>
+          <div class="kv"><small>Notice period</small><div id="kv-notice" class="v">1 Month</div></div>
+          <div class="kv"><small>Maintenance</small><div id="kv-maint" class="v">₹1,000 / one-time</div></div>
+          <div class="kv"><small>Rental type</small><div id="kv-type" class="v">LONG</div></div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div class="kv"><small>Next due date</small><div id="kv-due" class="v">—</div></div>
+          <div class="kv"><small>Renewal date</small><div id="kv-renewal" class="v">—</div></div>
+        </div>
+
+        <div class="pay-box">
+          <div class="inline" style="margin-bottom:8px;">
+            <strong>Pay rent</strong>
+            <span id="dueHint" class="warn"></span>
+          </div>
+          <div class="pay-row">
+            <input id="payAmount" class="input" type="number" min="0" step="1" placeholder="Amount (₹)"/>
+            <button id="payBtn" class="btn">Pay ₹5,000</button>
+          </div>
+          <div id="payMsg" class="success"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- P r o f i l e   T a b -->
+    <section id="profileSection" class="section hidden">
+      <h2>Profile & Settings</h2>
+      <p>Manage your account and preferences</p>
+      
+      <div class="menu-list">
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Help</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Payment</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Safety</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Payment History</div>
+            <div class="menu-subtitle">View all transactions</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Notifications</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          </div>
+
+          <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Settings</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Profile Update</div>
+            <div class="menu-subtitle">Edit personal information</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.5"/>
+              <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5"/>
+              <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">KYC Update</div>
+            <div class="menu-subtitle">Verify your documents</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="menu-item">
+          <div class="menu-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="menu-content">
+            <div class="menu-title">Privacy</div>
+            <div class="menu-subtitle">Data and security settings</div>
+          </div>
+          <div class="menu-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Vacate Confirmation Modal -->
+  <div id="vacateModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>⚠️ Vacate PG</h3>
+      <p>Are you sure you want to initiate the vacate process? This will start a 30-day notice period and cannot be undone easily.</p>
+      <div class="modal-actions">
+        <button id="cancelVacate" class="btn-secondary">Cancel</button>
+        <button id="confirmVacate" class="btn-danger">Yes, Vacate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- B o t t o m   N a v -->
+<nav class="bottom-nav">
+  <div class="tabs">
+    <button id="tabHome" class="tab-btn tab-btn--active" aria-label="Home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-10.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button id="tabMeals" class="tab-btn" aria-label="Meals">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M7 3v8M11 3v8M7 11c0 2 2 2 2 4v6M11 11c0 2-2 2-2 4v6M17 3v18M17 3c2 0 4 2 4 4s-2 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button id="tabRent" class="tab-btn" aria-label="Rent">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M5 3h14v18l-3-2-3 2-3-2-3 2V3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M9 7h6M9 10h6M9 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <button id="tabProfile" class="tab-btn" aria-label="Profile">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.418 0-8 2.239-8 5v2h16v-2c0-2.761-3.582-5-8-5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+  
+
+<script>
+  // -----------------------------
+  // Config from screenshot/example
+  // -----------------------------
+  const RENT_CONFIG = {
+    property: 'Srivari Gents PG',
+    room: 'K17 • 1',
+    rentAmount: 5000,
+    currencySymbol: '₹',
+    rentCycleDay: 1,        // "01" in screenshot
+    deposit: 1000,
+    startISO: '2025-07-09', // Jul 09, 2025
+    durationMonths: 11,
+    lockInMonths: 1,
+    sharing: 'SINGLE',
+    noticeMonths: 1,
+    maintenance: '₹1,000 / one-time',
+    rentalType: 'LONG',
+    totalTenants: 120
+  };
+
+  // -----------------------------
+  // Utilities
+  // -----------------------------
+  const pad = n => n<10 ? '0'+n : ''+n;
+  const fmtINR = v => `${RENT_CONFIG.currencySymbol}${v.toLocaleString('en-IN')}`;
+  function formatDate(d){
+    return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,' ');
+  }
+  function nextDueDate(fromDate=new Date()){
+    const d = new Date(fromDate.getFullYear(), fromDate.getMonth(), RENT_CONFIG.rentCycleDay);
+    if(fromDate > d){ d.setMonth(d.getMonth()+1); }
+    return d;
+  }
+  function renewalDate(){
+    const s = new Date(RENT_CONFIG.startISO);
+    const r = new Date(s);
+    r.setMonth(r.getMonth()+RENT_CONFIG.durationMonths);
+    return r;
+  }
+
+  // -----------------------------
+  // Rent Carousel
+  // -----------------------------
+  const rentCarousel = document.getElementById('rentCarousel');
+  function renderRentCarousel(){
+    rentCarousel.innerHTML = '';
+    const due = nextDueDate();
+    const card = document.createElement('div');
+    card.className = 'rent-card';
+    card.innerHTML = `
+      <div class="rent-row">
+        <div>
+          <div class="rent-amt">${fmtINR(RENT_CONFIG.rentAmount)}/month</div>
+          <div class="rent-meta">Room ${RENT_CONFIG.room}</div>
+        </div>
+        <div class="due">Due: ${formatDate(due)}</div>
+      </div>
+      <div class="rent-meta" style="margin-top:6px;">Cycle: Every ${pad(RENT_CONFIG.rentCycleDay)}</div>
+      <div class="rent-cta"><button class="btn">Pay now</button></div>
+    `;
+    // Clicking anywhere on the card opens Rent tab
+    card.addEventListener('click', ()=>{
+      activateTab('rent');
+      // focus amount and button
+      setTimeout(()=>{
+        document.getElementById('payAmount').value = RENT_CONFIG.rentAmount;
+        document.getElementById('payBtn').focus();
+        document.getElementById('rentSection').scrollIntoView({behavior:'smooth',block:'start'});
+      }, 50);
+    });
+    rentCarousel.appendChild(card);
+  }
+
+  // -----------------------------
+  // Meals (simplified sample data)
+  // -----------------------------
+  const weekdayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  function getMenuForDate(d){
+    const wd = d.getDay();
+    switch(wd){
+      case 1: return { breakfast:['Idly','Sambar','Chutney'], lunch:['Rice','Dal','Salad'], dinner:['Roti','Chapathi','Curry'] };
+      case 2: return { breakfast:['Poha','Tea'], lunch:['Rice','Sambar','Curd'], dinner:['Paratha','Sabzi'] };
+      case 3: return { breakfast:['Dosa','Chutney'], lunch:['Rice','Rasam','Salad'], dinner:['Roti','Paneer'] };
+      case 4: return { breakfast:['Upma'], lunch:['Rice','Dal Tadka'], dinner:['Chapathi','Veg Curry'] };
+      case 5: return { breakfast:['Pongal','Chutney'], lunch:['Rice','Mixed Veg','Curd'], dinner:['Roti','Dal Fry'] };
+      case 6: return { breakfast:['Aloo Paratha','Curd'], lunch:['Rice','Dal','Papad'], dinner:['Chapathi','Egg Curry'] };
+      default: return { breakfast:['Poori','Masala'], lunch:['Veg Biryani','Raita'], dinner:['Roti','Kofta'] };
+    }
+  }
+
+  const carousel = document.getElementById('carousel');
+  const datesStrip = document.getElementById('dates');
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const attendance = JSON.parse(localStorage.getItem('pg_att_v3')||'{}');
+  const cardRefs = []; const pillRefs = [];
+
+  function dateKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function chips(arr){ return arr.map(x=>`<span class="chip">${x}</span>`).join(''); }
+
+  function renderMealCard(d){
+    const key = dateKey(d);
+    const menu = getMenuForDate(d);
+    const isToday = d.toDateString()===today.toDateString();
+    const tm = new Date(today); tm.setDate(today.getDate()+1);
+    const isTomorrow = d.toDateString()===tm.toDateString();
+    const sel = attendance[key]||{b:false,l:false,d:false};
+
+    // Check timing restrictions for today only
+    const now = new Date();
+    const currentHour = now.getHours();
+    const canSelectBreakfast = !isToday || currentHour < 6;  // Before 6 AM
+    const canSelectLunch = !isToday || currentHour < 10;     // Before 10 AM  
+    const canSelectDinner = !isToday || currentHour < 17;   // Before 5 PM
+
+    const card = document.createElement('article');
+    card.className='card'; card.dataset.date=key;
+    card.innerHTML = `
+      <h3>${weekdayNames[d.getDay()]} ${isToday?'<span class="badge">Today</span>':''}${isTomorrow?'<span class="badge">Tomorrow</span>':''}</h3>
+      <div class="meal"><small>Breakfast</small><div class="chips">${chips(menu.breakfast)}</div></div>
+      <div class="meal"><small>Lunch</small><div class="chips">${chips(menu.lunch)}</div></div>
+      <div class="meal"><small>Dinner</small><div class="chips">${chips(menu.dinner)}</div></div>
+      <div class="attend">
+        <div class="toggle-row">
+          <label class="toggle ${!canSelectBreakfast?'disabled':''}"><input type="checkbox" data-k="b" ${sel.b?'checked':''} ${!canSelectBreakfast?'disabled':''}/><span class="dot"></span> Breakfast ${!canSelectBreakfast?'(Closed)':''}</label>
+          <label class="toggle ${!canSelectLunch?'disabled':''}"><input type="checkbox" data-k="l" ${sel.l?'checked':''} ${!canSelectLunch?'disabled':''}/><span class="dot"></span> Lunch ${!canSelectLunch?'(Closed)':''}</label>
+          <label class="toggle ${!canSelectDinner?'disabled':''}"><input type="checkbox" data-k="d" ${sel.d?'checked':''} ${!canSelectDinner?'disabled':''}/><span class="dot"></span> Dinner ${!canSelectDinner?'(Closed)':''}</label>
+        </div>
+        <div class="cta"><button class="btn">Confirm selection</button></div>
+      </div>
+    `;
+    function updateCTA(){
+      const s = attendance[key]||{b:false,l:false,d:false};
+      const any = s.b||s.l||s.d;
+      card.querySelector('.cta').style.display = any?'block':'none';
+    }
+    card.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const curr = attendance[key]||{b:false,l:false,d:false};
+        curr[cb.dataset.k] = cb.checked; attendance[key]=curr;
+        localStorage.setItem('pg_att_v3', JSON.stringify(attendance));
+        updateCTA();
+      });
+    });
+    card.querySelector('.cta .btn').addEventListener('click', ()=>{
+      card.querySelector('.cta .btn').textContent='Saved ✓';
+      setTimeout(()=>card.querySelector('.cta .btn').textContent='Confirm selection',2000);
+    });
+    updateCTA();
+    return card;
+  }
+
+  function renderDatePill(d){
+    const key = dateKey(d);
+    const btn = document.createElement('button');
+    btn.className='date-pill'; btn.dataset.date=key; btn.textContent=d.getDate();
+    btn.addEventListener('click', ()=>scrollToCard(key));
+    return btn;
+  }
+
+  function setActiveDate(key){
+    pillRefs.forEach(p=>p.classList.toggle('date-pill--active', p.dataset.date===key));
+    // center active date in strip
+    const active = datesStrip.querySelector(`.date-pill[data-date="${key}"]`);
+    if(active){
+      const left = active.offsetLeft - (datesStrip.clientWidth/2 - active.clientWidth/2);
+      datesStrip.scrollTo({left, behavior:'smooth'});
+    }
+  }
+  function scrollToCard(key){
+    const el = carousel.querySelector(`.card[data-date="${key}"]`); if(!el) return;
+    const left = el.offsetLeft - (carousel.clientWidth/2 - el.clientWidth/2);
+    carousel.scrollTo({left, behavior:'smooth'}); setActiveDate(key);
+  }
+
+  // Render month
+  for(let d=1; d<=daysInMonth; d++){
+    const date = new Date(year, month, d);
+    const card = renderMealCard(date); carousel.appendChild(card); cardRefs.push(card);
+    const pill = renderDatePill(date); datesStrip.appendChild(pill); pillRefs.push(pill);
+  }
+  // Sync active on scroll
+  let raf;
+  carousel.addEventListener('scroll', ()=>{
+    if(raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(()=>{
+      const center = carousel.scrollLeft + carousel.clientWidth/2;
+      let closest=null, best=Infinity;
+      cardRefs.forEach(c=>{
+        const mid = c.offsetLeft + c.clientWidth/2;
+        const dist = Math.abs(mid-center);
+        if(dist<best){best=dist;closest=c;}
+      });
+      if(closest){ setActiveDate(closest.dataset.date); }
+    });
+  });
+
+  // Start on today
+  const todayKey = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  scrollToCard(todayKey);
+
+  // -----------------------------
+  // Bottom navigation and tab logic
+  // -----------------------------
+  const tabBtns = {
+    home: document.getElementById('tabHome'),
+    meals: document.getElementById('tabMeals'),
+    rent: document.getElementById('tabRent'),
+    profile: document.getElementById('tabProfile')
+  };
+  const sections = {
+    home: document.getElementById('homeSection'),
+    rent: document.getElementById('rentSection'),
+    profile: document.getElementById('profileSection')
+  };
+  function activateTab(which){
+    // Buttons
+    Object.entries(tabBtns).forEach(([k,btn])=>btn.classList.toggle('tab-btn--active', k===which));
+    // Sections
+    sections.home.classList.toggle('hidden', !(which==='home'||which==='meals'));
+    sections.rent.classList.toggle('hidden', which!=='rent');
+    sections.profile.classList.toggle('hidden', which!=='profile');
+    // Scroll to content
+    if(which==='rent'){ sections.rent.scrollIntoView({behavior:'smooth', block:'start'}); }
+    else { sections.home.scrollIntoView({behavior:'smooth', block:'start'}); }
+  }
+  tabBtns.home.addEventListener('click', ()=>activateTab('home'));
+  tabBtns.meals.addEventListener('click', ()=>activateTab('home')); // meals content is in home section
+  tabBtns.rent.addEventListener('click', ()=>activateTab('rent'));
+  tabBtns.profile.addEventListener('click', ()=>activateTab('profile'));
+
+  // -----------------------------
+  // Populate Rent details
+  // -----------------------------
+function populateRentDetails(){
+    document.getElementById('kv-property').textContent = RENT_CONFIG.property;
+    document.getElementById('kv-room').textContent = RENT_CONFIG.room;
+    document.getElementById('kv-rent').textContent = fmtINR(RENT_CONFIG.rentAmount) + '/month';
+    document.getElementById('kv-cycle').textContent = pad(RENT_CONFIG.rentCycleDay);
+    document.getElementById('kv-deposit').textContent = fmtINR(RENT_CONFIG.deposit);
+    const start = new Date(RENT_CONFIG.startISO);
+    document.getElementById('kv-start').textContent = start.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,' ');
+    document.getElementById('kv-duration').textContent = `${RENT_CONFIG.durationMonths} Months`;
+    document.getElementById('kv-lockin').textContent = `${RENT_CONFIG.lockInMonths} Month${RENT_CONFIG.lockInMonths>1?'s':''}`;
+    document.getElementById('kv-sharing').textContent = RENT_CONFIG.sharing;
+    document.getElementById('kv-notice').textContent = `${RENT_CONFIG.noticeMonths} Month${RENT_CONFIG.noticeMonths>1?'s':''}`;
+    document.getElementById('kv-maint').textContent = RENT_CONFIG.maintenance;
+    document.getElementById('kv-type').textContent = RENT_CONFIG.rentalType;
+
+    const due = nextDueDate();
+    const renew = renewalDate();
+    document.getElementById('kv-due').textContent = formatDate(due);
+    document.getElementById('kv-renewal').textContent = formatDate(renew);
+
+    // Payment UI
+    const payAmount = document.getElementById('payAmount');
+    const payBtn = document.getElementById('payBtn');
+    const payMsg = document.getElementById('payMsg');
+    const dueHint = document.getElementById('dueHint');
+
+    payAmount.value = RENT_CONFIG.rentAmount;
+    payBtn.textContent = `Pay ${fmtINR(RENT_CONFIG.rentAmount)}`;
+    const now = new Date();
+    if(now > due){
+      dueHint.textContent = 'Overdue';
+    } else if ((due - now)/(1000*60*60*24) <= 3){
+      dueHint.textContent = 'Due soon';
+    } else {
+      dueHint.textContent = '';
+    }
+
+    payBtn.onclick = ()=>{
+      const amt = Number(payAmount.value||0);
+      payMsg.textContent = '';
+      if(amt < RENT_CONFIG.rentAmount){
+        payMsg.textContent = 'Amount less than monthly rent.'; payMsg.classList.remove('success'); return;
+      }
+      // Simulated payment success
+      const ref = 'TXN' + Date.now().toString().slice(-6);
+      payMsg.textContent = `Payment successful • Reference ${ref}`;
+      payMsg.classList.add('success');
+      // After payment, recompute next due
+      const nd = nextDueDate(new Date(nextDueDate().getFullYear(), nextDueDate().getMonth(), nextDueDate().getDate()+1));
+      document.getElementById('kv-due').textContent = formatDate(nd);
+      renderRentCarousel(); // update rent card due date text
+    };
+  }
+
+  // -----------------------------
+  // Vacate Feature
+  // -----------------------------
+const vacateContainer = document.getElementById('vacateContainer');
+  const vacateIcon = document.getElementById('vacateIcon');
+  const vacateModal = document.getElementById('vacateModal');
+  const cancelVacate = document.getElementById('cancelVacate');
+  const confirmVacate = document.getElementById('confirmVacate');
+  
+  // Check if vacate process is active
+  const vacateData = JSON.parse(localStorage.getItem('pg_vacate_data') || 'null');
+  
+  function initVacateCountdown(startDate) {
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 30);
+    
+    function updateCountdown() {
+      const now = new Date();
+      const totalTime = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+      const elapsed = now - new Date(startDate);
+      const remaining = Math.max(0, endDate - now);
+      
+      if (remaining <= 0) {
+        // Vacate period completed
+        localStorage.removeItem('pg_vacate_data');
+        location.reload();
+        return;
+      }
+      
+      const daysLeft = Math.ceil(remaining / (24 * 60 * 60 * 1000));
+      const progress = (elapsed / totalTime) * 360;
+      
+      vacateContainer.innerHTML = `
+        <div class="countdown-pie" style="--progress: ${progress}deg">
+          <div class="days">${daysLeft}<br>days</div>
+        </div>
+      `;
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 60000); // Update every minute
+  }
+  
+  function showVacateModal() {
+    vacateModal.classList.remove('hidden');
+  }
+  
+  function hideVacateModal() {
+    vacateModal.classList.add('hidden');
+  }
+  
+  function startVacateProcess() {
+    const startDate = new Date().toISOString();
+    localStorage.setItem('pg_vacate_data', JSON.stringify({ startDate }));
+    hideVacateModal();
+    initVacateCountdown(startDate);
+  }
+  
+  // Event listeners
+  vacateIcon.addEventListener('click', showVacateModal);
+  cancelVacate.addEventListener('click', hideVacateModal);
+  confirmVacate.addEventListener('click', startVacateProcess);
+  
+  // Close modal on backdrop click
+  vacateModal.addEventListener('click', (e) => {
+    if (e.target === vacateModal) hideVacateModal();
+  });
+  
+  // Initialize vacate feature
+  if (vacateData) {
+    initVacateCountdown(vacateData.startDate);
+  }
+
+  // Init
+  renderRentCarousel();
+  populateRentDetails();
+</script>
+</body>
 </html>
